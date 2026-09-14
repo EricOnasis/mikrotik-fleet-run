@@ -3,11 +3,13 @@
 
 Usage:
     python fleetrun.py inventory.json "/system resource print"
+    python fleetrun.py inventory.json "/system resource print" --parallel 8
 """
 import argparse
 import json
 import socket
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import paramiko
 
@@ -49,8 +51,17 @@ def run_on_router(router: dict, command: str, timeout: int = DEFAULT_TIMEOUT) ->
         client.close()
 
 
-def run_fleet(routers: list, command: str, timeout: int = DEFAULT_TIMEOUT) -> list:
-    return [run_on_router(r, command, timeout) for r in routers]
+def run_fleet(routers: list, command: str, max_parallel: int = 1,
+              timeout: int = DEFAULT_TIMEOUT) -> list:
+    if max_parallel <= 1:
+        return [run_on_router(r, command, timeout) for r in routers]
+
+    results = []
+    with ThreadPoolExecutor(max_workers=max_parallel) as executor:
+        futures = {executor.submit(run_on_router, r, command, timeout): r for r in routers}
+        for future in as_completed(futures):
+            results.append(future.result())
+    return results
 
 
 def print_results(results: list) -> None:
@@ -64,12 +75,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("inventory_file", help="Path to an inventory.json file")
     parser.add_argument("command", help="RouterOS command to run on every router")
+    parser.add_argument("--parallel", type=int, default=1,
+                         help="Number of routers to run against concurrently (default: 1)")
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT,
                          help="Per-router SSH/command timeout in seconds")
     args = parser.parse_args()
 
     routers = load_inventory(args.inventory_file)
-    results = run_fleet(routers, args.command, args.timeout)
+    results = run_fleet(routers, args.command, args.parallel, args.timeout)
     results.sort(key=lambda r: r["name"])
     print_results(results)
 

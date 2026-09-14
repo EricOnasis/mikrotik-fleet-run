@@ -1,7 +1,8 @@
 # mikrotik-fleet-run
 
 Run one RouterOS command across every router in an inventory file over SSH, and see the results
-side by side instead of logging into each router one at a time.
+side by side instead of logging into each router one at a time. Useful for quick fleet-wide checks:
+RouterOS version, uptime, whether a specific firewall rule made it everywhere, etc.
 
 ## Installation
 
@@ -22,12 +23,30 @@ uptime: 12w3d4h32m
 version: 7.15 (stable)
 ...
 
+=== core (192.168.88.2) [OK] ===
+uptime: 40w1d2h10m
+version: 7.14.2 (stable)
+...
+
 2/2 succeeded.
 ```
 
-Exits `1` if any router failed to connect or the command errored, `0` if every router succeeded.
+Run against many routers at once instead of one at a time:
 
-Parallel execution across many routers at once coming soon.
+```sh
+python fleetrun.py inventory.json "/system resource print" --parallel 8
+```
+
+Exits `1` if any router failed to connect or the command errored, `0` if every router succeeded —
+safe to use in a script.
+
+## Running the tests
+
+```sh
+python -m unittest discover -s tests
+```
+
+Tests mock the SSH layer, so they run without any real routers.
 
 ## License
 

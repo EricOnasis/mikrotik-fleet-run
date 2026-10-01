@@ -51,3 +51,7 @@ Tests mock the SSH layer, so they run without any real routers.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## About
+
+Maintained by [Onasis Tech](https://onasis.tech), a Kenyan team building software for ISPs and network operators. If you manage MikroTik routers behind CGNAT or Starlink, [Onasis Tech Connect](https://connect.onasis.tech) gives each one a permanent remote access address, no public IP needed.
